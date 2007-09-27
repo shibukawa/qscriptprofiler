@@ -42,11 +42,12 @@ Profiler::Profiler(QScriptEngine *engine) : QScriptEngineAgent(engine), first(tr
 Profiler::~Profiler()
 {
     QString fileName = QString("callgrind.%1.out").arg(QCoreApplication::applicationPid());
-    qDebug() << fileName;
+    QTextStream stdOut(stdout);
+    stdOut << "===" << fileName << "===" << endl;
+
     QFile file(fileName);
     file.open(QFile::ReadWrite);
     QTextStream out(&file);
-    //QTextStream out(stdout);
     out << "creator: " << QCoreApplication::applicationName() << endl;
     out << "positions: line" << endl;
     out << "events: microseconds" << endl;
@@ -54,39 +55,32 @@ Profiler::~Profiler()
     QHashIterator<int, Object> i(objects);
     while (i.hasNext()) {
         i.next();
-        //out << "x" << i.key() << endl;
         Object *object = &objects[i.key()];
         for (int j = 0; j < object->functions.count(); ++j) {
-            //if (j == 0)
-                out << "fl=" << (object->fileName.isEmpty() ? "native" : object->fileName) << endl;
+            out << "fl=" << (object->fileName.isEmpty() ? "native" : object->fileName) << endl;
             out << "fn=" << (object->functions[j].functionName.isEmpty()
                              ? (QString("native_") + object->functions[j].startLine)
                              : object->functions[j].functionName) << endl;
             int curLine = -1;
             for (int k = 0; k < objects[i.key()].functions[j].actions.count(); ++k) {
                 const Action *action = &(objects[i.key()].functions.at(j).actions[k]);
-                if (action->called == 0) {
-                    if (curLine == -1) {
-                        out << action->line;
-                    } else {
-                        if (action->line == curLine)
-                            out << "*";
-                        if (action->line > curLine)
-                            out << "+" << action->line - curLine;
-                        if (action->line < curLine)
-                            out << "-" << curLine - action->line;
-                    }
-                    out << " " << action->cost << endl;
-                    curLine = action->line;
-                } else {
-                    //if (action->callObject != i.key())
+                if (action->called != 0) {
                     out << "cfl=" << objects[action->callObject].fileName << endl;
-                    out << "cfn=" << (action->callFunction.isEmpty()
-                            ? (QString("unknown_") + action->line)
-                            : action->callFunction) << endl;
+                    out << "cfn=" << action->callFunction << endl;
                     out << "calls=" << action->called << " " << action->callFunctionLine /*action->line*/ << endl;
-                    out << action->line << " " << action->cost << endl;
                 }
+                if (curLine == -1) {
+                    out << action->line;
+                } else {
+                    if (action->line == curLine)
+                        out << "*";
+                    if (action->line > curLine)
+                        out << "+" << action->line - curLine;
+                    if (action->line < curLine)
+                        out << "-" << curLine - action->line;
+                }
+                out << " " << action->cost << endl;
+                curLine = action->line;
             }
             out << endl;
         }
@@ -100,7 +94,7 @@ Function *Profiler::determineCurrentFunction(qint64 scriptId)
     if (scriptIdCache == scriptId && currentFunctionCache
         && currentFunctionCache->startLine == currentFunctionLine.top())
         return currentFunctionCache;
-    
+
     Object *object = &objects[scriptId];
     QList<Function>::iterator i;
     i = qBinaryFind(object->functions.begin(), object->functions.end(), Function(currentFunctionLine.top()));
@@ -124,16 +118,14 @@ QString Profiler::functionName(QScriptContext *ctx, qint64 scriptId) const
     if (info.functionType() == QScriptContextInfo::NativeFunction)
         return "native";
 
-    //qDebug() << objects[scriptId].code[(info.functionStartLineNumber()) - 1].simplified();
+    // wish this could be nicer
     QString lineName =objects[scriptId].code[(info.functionStartLineNumber()) - 1].simplified();
-
     QString strip = "= function(";
     if (lineName.contains(strip))
         lineName = lineName.mid(0, lineName.indexOf(strip));
     return lineName;
 
-    //qDebug() << ctx->thisObject().toString() << ctx->backtrace();
-    return QString("anonymous_%1").arg(info.functionStartLineNumber());
+    //return QString("anonymous_%1").arg(info.functionStartLineNumber());
 }
 
 void Profiler::functionEntry(qint64 scriptId)
@@ -141,7 +133,6 @@ void Profiler::functionEntry(qint64 scriptId)
     positionDone();
     QScriptContext *ctx = engine()->currentContext();
     QScriptContextInfo info(ctx);
-    //qDebug() << "";
     //qDebug() << "push ->" << scriptId << info.functionName() << info.functionStartLineNumber();
     Function *f = determineCurrentFunction(currentScriptId.isEmpty() ? -1 : currentScriptId.top());
     QString infoFunctionName = info.functionName();
@@ -161,8 +152,6 @@ void Profiler::functionEntry(qint64 scriptId)
             a = &f->actions[f->actions.count() - 1];
         }
         currentFunction.push(a);
-    } else {
-        //qDebug() << "not found" <<info.functionName();
     }
 
     currentLine.push(0);
@@ -173,12 +162,8 @@ void Profiler::functionEntry(qint64 scriptId)
         Function fn;
         fn.startLine = info.functionStartLineNumber();
         fn.functionName = functionName(ctx, scriptId);
-        
         QList<Function>::iterator i = qLowerBound(objects[scriptId].functions.begin(), objects[scriptId].functions.end(), fn);
         objects[scriptId].functions.insert(i, fn);
- 
-        //int x = objects[scriptId].functions.count() - 1;
-        //f = &objects[scriptId].functions[x];
     }
 }
 
@@ -192,7 +177,6 @@ void Profiler::functionExit(qint64 /*scriptId*/, const QScriptValue &)
 
     if (!currentFunction.isEmpty())
         currentFunction.pop();
-
     if (!currentFunction.isEmpty()) {
         useconds_t current = getTimeOfDay();
         currentFunction.top()->cost += current - funTime;
@@ -234,12 +218,10 @@ void Profiler::positionDone()
     Action *action = &f->actions[i - f->actions.begin()];
     action->cost += current - instTime;
     instTime = current;
-    //qDebug() << "line" << action->line << "costs" << action->cost << (currentLine.isEmpty() ? -1 : currentLine.top());
 }
 
 void Profiler::scriptLoad(qint64 id, const QString &program, const QString &fileName, int /*baseLineNumber*/ )
 {
-    //qDebug() << "load" << id << fileName << baseLineNumber;
     Object obj;
     obj.code = program.split('\n');
     obj.fileName = fileName;
