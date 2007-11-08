@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = qsprofiler
+TARGET = qscriptprofiler
 DEPENDPATH += .
 INCLUDEPATH += .
 QT += script
@@ -9,4 +9,4 @@ mac: CONFIG -= app_bundle
 SOURCES += main.cpp
 DESTDIR = ../
 
-include(qsprofiler.pri)
+include(qscriptprofiler.pri)

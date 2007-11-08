@@ -1,12 +1,12 @@
-qsprofiler is a profiler for QtScript script (a Javascript language)
+qscriptprofiler is a profiler for QtScript script (a Javascript language that is part of Qt)
 
-qsprofiler runs with script files as arguments that are each executed in the order they are passed.  At the end it will generate a callgrind file that can be loaded in KCachegrind.  KCachegrind is a very good visual tool for profile data.  qsprofile uses gettimeofday() to determine how long something takes so there is the possibility that it isn't completly accurate if your system is under heavy load.  The profiler can be used in other projects and a pri file is included.  QSProfiler uses the QScriptEngineAgent which is part of Qt 4.4 and greater (As of this writing 4.4 isn't released, but you can down snapshots) 
+qsscriptprofiler runs with script files as arguments that are each executed in the order they are passed.  At the end it will generate a callgrind file that can be loaded in KCachegrind.  KCachegrind is a very good visual tool for profile data.  qscriptprofile uses gettimeofday() to determine how long something takes so there is the possibility that it isn't completly accurate if your system is under heavy load.  The profiler can be used in other projects and a pri file is included.  QSProfiler uses the QScriptEngineAgent which is part of Qt 4.4 and greater (As of this writing 4.4 isn't released, but you can down snapshots) 
 
 For more information about kcachegrind go here:
 http://kcachegrind.sourceforge.net/cgi-bin/show.cgi
 
 For more information about QtScript go here:
-http://doc.trolltech.com/4.3/qtscript.html
+http://doc.trolltech.com/4/qtscript.html
 
 TO BUILD:
 ---
@@ -14,6 +14,6 @@ qmake
 make
 
 An example is included which is the traveling salsman problem as solved with a genetic algorithm.  To run it do the following:
-./qsprofiler examples/javascriptgeneticalgorithm.js examples/travelingsalesman.js 
+./qscriptprofiler examples/javascriptgeneticalgorithm.js examples/travelingsalesman.js 
 
 - Benjamin Meyer
