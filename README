@@ -1,4 +1,4 @@
-qscriptprofiler is a profiler for QtScript script (a Javascript language that is part of Qt)
+qscriptprofiler is a profiler for QtScript (a Javascript language that is part of Qt)
 
 qsscriptprofiler runs with script files as arguments that are each executed in the order they are passed.  At the end it will generate a callgrind file that can be loaded in KCachegrind.  KCachegrind is a very good visual tool for profile data.  qscriptprofile uses gettimeofday() to determine how long something takes so there is the possibility that it isn't completly accurate if your system is under heavy load.  The profiler can be used in other projects and a pri file is included.  QSProfiler uses the QScriptEngineAgent which is part of Qt 4.4 and greater (As of this writing 4.4 isn't released, but you can down snapshots) 
 
